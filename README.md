@@ -20,7 +20,7 @@ therefore useful for devs using either the old or new SDK.
   pystubs folder go in the Win32 folder and set it as a source root/directory in your IDE.
 - Example usage
 
-```
+```py
 from __future__ import annotations                  # Ensures type hints are ignored at runtime
 
 from typing import TYPE_CHECKING
