@@ -2,7 +2,7 @@
 
 #### Checkout the [PythonSDK Mod DB](https://bl-sdk.github.io/) for instructions on how to develop with the Python SDK
 
-Stub files for all unreal objects accessible through the Python SDK. You can use these to get type checking,
+Stub files for all unreal objects accessible through the Python SDK for Borderlands 2. You can use these to get type checking,
 class/method signatures, and auto-complete features in your IDE when working with game objects.
 
 ## Note on SDK versions
@@ -49,12 +49,12 @@ TBD
 - All inheritances and associated attributes and methods are preserved.
     - `WillowPlayerController -> GearboxPlayerController -> GamePlayerController -> PlayerController -> Controller -> Actor -> Object`
 - Unreal flags and types are converted to Python types
-    - enum -> IntEnum
+    - enum -> IntFlag
     - struct -> class
     - optional -> Optional[]
     - bool -> bool
     - byte -> int
-    - const -> Final[]
+    - const -> str
     - float -> float
     - name -> str
     - str -> str

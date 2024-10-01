@@ -39,7 +39,7 @@ def parse_property_flags(flags):
 BASIC_TYPES = {
     'BoolProperty': 'bool',
     'ByteProperty': 'int',
-    'Const': 'Final[Any]',
+    'Const': 'str',
     'FloatProperty': 'float',
     'IntProperty': 'int',
     'NameProperty': 'str',
@@ -60,9 +60,10 @@ IGNORE_PROPERTIES = (
 DEFAULT_IMPORTS = [
     'from type_defs import Out, AttributeProperty\n',
     'from typing import Final, Any, Optional, Type, Callable\n'
-    'from enum import IntEnum\n'
+    'from enum import IntFlag\n'
     '\n'
 ]
+
 
 
 @dataclass
@@ -255,9 +256,9 @@ def make_class_stub(cls: UClass) -> None:
         if dependency.module and dependency.module != cls._path_name() and dependency.name != cls.Name:
             lines.append(f'from {dependency.module} import {dependency.name}\n')
 
-    # Define enums as IntEnum
+    # Define enums as IntFlag
     for enum in class_def.enums:
-        lines.append(f'\n\nclass {enum.name}(IntEnum):\n')
+        lines.append(f'\n\nclass {enum.name}(IntFlag):\n')
         for attr, val in enum.attributes.items():
             lines.append(f'\t{attr} = {val}\n')
 
