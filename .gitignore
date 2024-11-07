@@ -1,4 +1,5 @@
 /pystubs
+/legacy_pystubs
 /class_def_data
 /__pycache__
 class_defs.json

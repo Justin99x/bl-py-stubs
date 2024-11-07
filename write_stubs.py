@@ -8,13 +8,15 @@ from typing import Dict, List
 
 from bl_py_stubs.definitions import BUILTINS, ClassDef
 from bl_py_stubs.game import Game
-from bl_py_stubs.paths import BL2_DIR, CLASS_DEF_DATA_DIR, COMMON_DIR, PYSTUBS_DIR, TPS_DIR, get_pkg_dir, get_pkg_init
+from bl_py_stubs.paths import BL2_DIR, CLASS_DEF_DATA_DIR, COMMON_DIR, LEGACY_BL2_DIR, LEGACY_COMMON_DIR, LEGACY_TPS_DIR, PYSTUBS_DIR, \
+    TPS_DIR, get_pkg_dir, \
+    get_pkg_init
 
 
-def write_class_stub(base_dir: str, class_def: ClassDef) -> None:
+def write_class_stub(base_dir: str, class_def: ClassDef, legacy: bool = False) -> None:
     '''Function to write the stub file. Fields need to all be d
     efined as properties so that game specific versions can subclass them.'''
-    lines = class_def.to_str()
+    lines = class_def.to_str(legacy=legacy)
 
     # Write the file
     with open(f'{get_pkg_dir(base_dir, class_def.package)}/{class_def.name()}.pyi', 'w') as f:
@@ -45,7 +47,7 @@ def write_make_struct_stubs(base_dir: str, class_defs: List[ClassDef], game: Gam
 
 
 
-def write_stubs(base_dir: str, class_defs: List[ClassDef]) -> None:
+def write_stubs(base_dir: str, class_defs: List[ClassDef], legacy: bool = False) -> None:
     packages = set([class_def.package for class_def in class_defs])
 
     # Clear out old stubs and add __init__.py files
@@ -60,7 +62,7 @@ def write_stubs(base_dir: str, class_defs: List[ClassDef]) -> None:
 
     package_classes = {pkg: [] for pkg in packages}
     for class_def in class_defs:
-        write_class_stub(base_dir, class_def)
+        write_class_stub(base_dir, class_def, legacy=legacy)
         package_classes[class_def.package].append(class_def.name())
 
     for pkg in packages:
@@ -82,18 +84,11 @@ if __name__ == '__main__':
     with open(f'{CLASS_DEF_DATA_DIR}/bl2_class_defs_adj.pkl', 'rb') as f:
         bl2_class_defs: List[ClassDef] = pickle.load(f)
 
-    # common_names = list(set(name for ccd in common_class_defs for name in ccd.get_full_names()))
-    #
-    # for cls in tps_class_defs:
-    #     cls.set_game(Game.TPS, common_names)
-    #
-    # for cls in bl2_class_defs:
-    #     cls.set_game(Game.BL2, common_names)
-    #
+
     write_stubs(COMMON_DIR, common_class_defs)
     write_stubs(TPS_DIR, tps_class_defs)
     write_stubs(BL2_DIR, bl2_class_defs)
 
-    # write_make_struct_stubs(PYSTUBS_DIR, common_class_defs, Game.COMMON)
-    # write_make_struct_stubs(PYSTUBS_DIR, tps_class_defs, Game.TPS)
-    # write_make_struct_stubs(PYSTUBS_DIR, bl2_class_defs, Game.BL2)
+    write_stubs(LEGACY_COMMON_DIR, common_class_defs, legacy=True)
+    write_stubs(LEGACY_TPS_DIR, tps_class_defs, legacy=True)
+    write_stubs(LEGACY_BL2_DIR, bl2_class_defs, legacy=True)

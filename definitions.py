@@ -12,10 +12,16 @@ if TYPE_CHECKING:
     from unrealsdk.unreal import UObject
 
 DEFAULT_IMPORTS = [
-    'from typing import Final, Any, Optional, Type, Callable, List, Tuple, Annotated, TypeAlias, Protocol, Literal\n'
+    'from typing import Type, List, Tuple, Annotated, Literal\n'
     'from type_defs import OutParam, AttributeProperty\n',
-    'from unrealsdk.unreal import UStruct, UScriptStruct, UClass, BoundFunction, WrappedStruct, UFunction, UObject\n'
+    'from unrealsdk.unreal import BoundFunction, WrappedStruct, UObject\n'
     'from unrealsdk.unreal._uenum import UnrealEnum\n',
+    '\n'
+]
+
+LEGACY_DEFAULT_IMPORTS = [
+    'from typing import Type, List, Tuple, Annotated, Protocol, Literal\n'
+    'from type_defs import OutParam, AttributeProperty\n',
     '\n'
 ]
 
@@ -34,7 +40,8 @@ BUILTINS = [
     'AttributeProperty',
     'Out'
 ]
-''
+
+DUPLICATE_STRUCTS = ['TerrainWeightedMaterial', 'ProjectileBehaviorSequenceStateData', 'CheckpointRecord']
 
 
 class TypeCat(Enum):
@@ -119,24 +126,10 @@ class TypeRef(BaseDef):
         No prefix if current class context is same as cls.'''
         use_game = override_game if override_game else self.game
         ref = '.'.join([name for name in self.names])
-        # Builtins don't get class/namespace prefix
-        if self.type_cat != TypeCat.BUILTIN:
+        # Builtins don't get class/namespace prefix. CONST is str in Python
+        if self.type_cat not in [TypeCat.BUILTIN, TypeCat.CONST]:
             ref = f'{use_game.value}.{ref}'
         return ref
-
-
-# "['Type']",                               Type[T] | None
-# "['Type', 'Optional']",                   Type[T] | None = ...
-# "['List', 'Optional']",                   List[T] = ...
-# "['Out', 'Optional']",                    Annotated[T, OutParam] = ... or Annotated[T | None, OutParam] = ...         depends on T
-# "['List']",                               List[T]
-# "['Out']",                                Annotated[T, OutParam] or Annotated[T | None, OutParam]                     depends on T
-# "['Optional']",                           T = ...  or  T | None = ...                                                 depends on T
-# '[]',                                     T or T | None                                                               depends on T
-# "['List', 'Out']",                        Annotated[List[T], OutParam]
-# "['Type', 'List']",                       List[Type[T]]
-# "['Type', 'List', 'Out']",                Annotated[List[Type[T]], OutParam]
-# "['List', 'Out', 'Optional']"             Annotated[List[T], OutParam] = ...
 
 
 @dataclass
@@ -174,7 +167,6 @@ class PropertyRef:
 
     def make_struct_arg_str(self, cls_name: str, cls_game: Game):
         return self._type_additions(self.type_ref.to_str(cls_name, None), True)
-
 
 
 @dataclass
@@ -220,7 +212,7 @@ class ReturnRef:
 
         return ref
 
-    def to_str(self, cls_name: str, out_params: Optional[List[ParamRef]] = None):
+    def to_str(self, cls_name: str, out_params: Optional[List[ParamRef]] = None, legacy: bool = False):
         '''No override needed here because we set it in set_game()'''
         ref = self.type_ref.to_str(cls_name)
         if 'Type' in self.type_ref.type_constructors:
@@ -232,8 +224,11 @@ class ReturnRef:
 
         if out_params:
             out_refs = ', '.join([self._out_param_to_str(cls_name, op) for op in out_params])
-            ref = 'Ellipsis' if ref == 'None' else ref
-            return f'Tuple[{ref}, {out_refs}]'
+            if legacy and ref == 'None':
+                return f'Tuple[{out_refs}]' if len(out_params) > 1 else out_refs
+            else:
+                ref = 'Ellipsis' if ref == 'None' else ref
+                return f'Tuple[{ref}, {out_refs}]'
         else:
             return ref
 
@@ -242,9 +237,17 @@ class ReturnRef:
 class EnumDef(BaseDef):
     attributes: dict = field(default_factory=dict)
 
-    def to_str(self) -> str:
+    def to_str(self, legacy: bool = False) -> str:
         lines = []
-        lines.append(f'\tclass {self.name()}(UnrealEnum):\n')
+        super_str = '(IntFlag)' if legacy else '(UnrealEnum)'
+        lines.append(f'\tclass {self.name()}{super_str}:\n')
+        # Docstring
+        lines.append('\t\t"""\n')
+        for attr, val in self.attributes.items():
+            lines.append(f'\t\t{attr} = {val}\n')
+        lines.append('\t\t"""\n')
+
+        # Attributes
         for attr, val in self.attributes.items():
             lines.append(f'\t\t{attr} = {val}\n')
         if not self.attributes:
@@ -258,34 +261,29 @@ class StructDef(BaseDef):
     supers: List[TypeRef] = field(default_factory=list)
     properties: List[PropertyRef] = field(default_factory=list)
 
-    def to_str(self, cls_name: str, cls_game: Game) -> str:
+    def to_str(self, cls_name: str, cls_game: Game, legacy: bool = False) -> str:
         lines = []
-        # super_str = ', '.join(['UScriptStruct'] + [sup.to_str(cls_name) for sup in self.supers])
-        super_str = 'WrappedStruct'
+        super_str = '(WrappedStruct)' if not legacy else ''
         prop_arg_refs = [f'{prop.var_name}: {prop.make_struct_arg_str(cls_name, cls_game)}' for prop in self.properties]
-        lines.append(f'\tclass {self.name()}{"(" + super_str + ")" if super_str else ""}:\n')
+        lines.append(f'\tclass {self.name()}{super_str}:\n')
         # Docstring
         lines.append(f'\t\t"""\n\t\t{self.full_name()}\n\n')
-        lines.extend([f'\t\t{prop_arg_ref}' for prop_arg_ref in prop_arg_refs])
+        lines.extend([f'\t\t{prop_arg_ref}\n' for prop_arg_ref in prop_arg_refs])
         lines.append('\t\t"""\n')
 
         for prop in self.properties:
             lines.append(prop.to_str(cls_name, 2, cls_game))  # Two tabs because we're in a class in a struct
 
-        lines.append('\n\t\t@staticmethod\n')
-        lines.append(f'\t\tdef _make_struct(name: Literal["{self.full_name()}"], fully_qualified: Literal[True], /{", *, " if prop_arg_refs else ""}{", ".join(prop_arg_refs)}) -> {cls_game.value + "." + ".".join(self.names)}: ...')
-        # if not self.properties:
-        #     lines.append(f'\t\tpass\n')
+        if not legacy:
+            struct_name = self.full_name() if self.name() in DUPLICATE_STRUCTS else self.name()
+            lines.append('\n\t\t@staticmethod\n')
+            lines.append(
+                f'\t\tdef make_struct(name: Literal["{struct_name}"], fully_qualified: Literal[True], /{", *, " if prop_arg_refs else ""}{", ".join(prop_arg_refs)}) -> {cls_game.value + "." + ".".join(self.names)}: ...')
+        elif len(self.properties) == 0:
+            lines.append('\t\tpass')
+
         lines.append('\n\n')
         return ''.join(lines)
-
-    # @staticmethod
-    # def _make_struct(name: Literal["Core.Object.Vector"], fully_qualified: Literal[True], /, *, X: float, Y: float,  Z: float) -> Object.Vector: ...
-    # def overload_str(self, cls_name: str, cls_game: Game) -> str:
-    #     self_name = '.'.join(self.names)
-    #     prop_refs = [f'{prop.var_name}: {prop.struct_overload_str(cls_name, cls_game)}' for prop in self.properties]
-    #     func_str = f'def make_struct(name: Literal["{self.full_name()}"], fully_qualified: None | bool = None, /{", *, " if prop_refs else ""}{", ".join(prop_refs)}) -> {cls_game.value + "." + self_name}: ...'
-    #     return '@overload\n' + func_str + '\n\n'
 
 
 @dataclass
@@ -300,29 +298,32 @@ class FunctionDef(BaseDef):
                 res.append(param)
         return res
 
-    def _return_str(self, cls_name: str):
+    def _return_str(self, cls_name: str, legacy: bool = False):
         out_params = self._get_out_params()
         if out_params:
-            return self.ret.to_str(cls_name, out_params)
+            return self.ret.to_str(cls_name, out_params, legacy=legacy)
         else:
-            return self.ret.to_str(cls_name)
+            return self.ret.to_str(cls_name, legacy=legacy)
 
     # Defining function as a class so that we can get args and return values out for hook purposes
-    def to_str(self, cls_name: str) -> str:
+    def to_str(self, cls_name: str, legacy: bool = False) -> str:
+        bound_function_str = '(BoundFunction)' if not legacy else ''
+        wrapped_struct_str = '(WrappedStruct)' if not legacy else ''
         lines = []
         param_refs = ', '.join([param.to_str(cls_name) for param in self.params])
         # Protocol
-        lines.append(f'\tclass _{self.name()}(BoundFunction):\n')
+        lines.append(f'\tclass _{self.name()}{bound_function_str}:\n')
         # args
-        lines.append(f'\t\tclass args(WrappedStruct):\n')
+        lines.append(f'\t\tclass args{wrapped_struct_str}:\n')
         for param in self.params:
             lines.append(f'\t\t\t{param.to_str(cls_name)}\n')
         if not self.params:
             lines.append('\t\t\tpass\n\n')
         # ret
-        lines.append(f'\t\ttype ret = {self._return_str(cls_name)}\n\n')
+        lines.append(f'\t\ttype ret = {self._return_str(cls_name, legacy=legacy)}\n\n')
         # Make it callable
-        lines.append(f'\t\tdef __call__(self{", " + param_refs if param_refs else ""}) -> {self._return_str(cls_name)}: ...\n\n')
+        lines.append(
+            f'\t\tdef __call__(self{", " + param_refs if param_refs else ""}) -> {self._return_str(cls_name, legacy=legacy)}: ...\n\n')
 
         # Class attribute and docstring
         lines.append(f'\t{self.name()}: _{self.name()}\n')
@@ -332,7 +333,7 @@ class FunctionDef(BaseDef):
         if not self.params:
             lines.append(f'\tNo args\n')
         lines.append('\n')
-        lines.append(f'\tReturns: {self._return_str(cls_name)}\n\t"""\n\n')
+        lines.append(f'\tReturns: {self._return_str(cls_name, legacy=legacy)}\n\t"""\n\n')
 
         return ''.join(lines)
 
@@ -398,8 +399,10 @@ class ClassDef(BaseDef):
             if func.ret:
                 func.ret.type_ref.game = try_game
 
-    def to_str(self) -> str:
+    def to_str(self, legacy: bool = False) -> str:
         lines = copy(DEFAULT_IMPORTS)
+        if legacy:
+            lines = copy(LEGACY_DEFAULT_IMPORTS)
 
         lines.append('import common\n')
         if self.game != Game.COMMON:
@@ -414,17 +417,17 @@ class ClassDef(BaseDef):
 
         # Enums
         for enum in self.enums:
-            lines.append(enum.to_str())
+            lines.append(enum.to_str(legacy=legacy))
 
         # Structs
         deferred_struct_lines = []
         for struct in self.structs:
             for sup in struct.supers:
                 if sup.name() == struct.name():
-                    deferred_struct_lines.append(struct.to_str(self.name(), self.game))
+                    deferred_struct_lines.append(struct.to_str(self.name(), self.game, legacy=legacy))
                     break
             else:
-                lines.append(struct.to_str(self.name(), self.game))
+                lines.append(struct.to_str(self.name(), self.game, legacy=legacy))
         lines.extend(deferred_struct_lines)
 
         # Properties
@@ -437,19 +440,12 @@ class ClassDef(BaseDef):
         lines.append('\n\n')
 
         # Functions
-        # init_lines = []
         for func in self.functions:
             if func.name() == self.name() or func.name() in BUILTINS:
-                deferred_properties_functions.append(func.to_str(self.name()))
+                deferred_properties_functions.append(func.to_str(self.name(), legacy=legacy))
             else:
-                lines.append(func.to_str(self.name()))
-            # init_lines.append(func.init_str())
+                lines.append(func.to_str(self.name(), legacy=legacy))
         lines.extend(deferred_properties_functions)
-
-        # if init_lines:
-        #     lines.append(f'\tdef __init__(self):\n')
-        #     lines.extend(init_lines)
-        #     lines.append('\n')
 
         if len(self.properties) + len(self.functions) + len(self.structs) + len(self.enums) == 0:
             lines.append(f'\tpass\n')
