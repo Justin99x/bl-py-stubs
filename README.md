@@ -68,3 +68,29 @@ TBD
         - FloatAttributeProperty -> AttributeProperty[float]
         - IntAttributeProperty -> AttributeProperty[int]
         - ByteAttributeProperty -> AttributeProperty[int]
+
+
+
+```py
+# common
+from common.GearboxFramework import GearboxPlayerController
+class WillowPlayerController(GearboxPlayerController): ...
+
+# tps option 1
+# Doesn't inherit anything game specific from tps GearboxPlayerController
+import common
+class WillowPlayerController(common.WillowGame.WillowPlayerController): ...
+
+# tps option 2
+# Doesn't inherit anything from common WillowPlayerController
+from tps.GearboxFramework import GearboxPlayerController
+class WillowPlayerController(GearboxPlayerController)
+
+# tps option 3
+# Inherits from both, but then tps.GearboxPlayerController is going to be inheriting from both
+# common.GamePlayerController and tps.GamePlayerController, which seems like it could be messy?
+import common
+from tps.GearboxFramework import GearboxPlayerController
+class WillowPlayerController(common.WillowGame.WillowPlayerController, GearboxPlayerController): ...
+```
+
