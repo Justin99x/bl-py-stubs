@@ -153,7 +153,7 @@ class PropertyRef:
         '''cls_game is current class context, used to determine what game return values and getters should use
         Only needed here because same type_ref is used for both getters and setters'''
         getter_ref = self._type_additions(self.type_ref.to_str(cls_name, cls_game), False)
-        setter_ref = self._type_additions(self.type_ref.to_str(cls_name, Game.COMMON), True)
+        setter_ref = self._type_additions(self.type_ref.to_str(cls_name), True)
 
         tab_str = tabs * '\t'
         lines = []

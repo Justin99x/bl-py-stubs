@@ -1,6 +1,7 @@
-/pystubs
-/legacy_pystubs
+/gamestubs
+/legacy_gamestubs
 /class_def_data
 /__pycache__
 class_defs.json
 reload.py
+make_zips.py

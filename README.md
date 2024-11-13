@@ -37,8 +37,12 @@ To make it possible to type hint when developing mods that work for BL2, TPS, or
 
 ## Usage - New SDK
 
-Download the pystubs.zip file and extract it to desired location in your game folder. Recommend
-pystubs folder go in the sdk_mods folder and set it as a source root/directory in your IDE.
+Download the gamestubs.zip file and extract it to desired location in your game folder. Can add bl2, common, and tps 
+folders to .stubs folder that ships with the SDK to keep all stubs in one place.
+
+<span style="color:red">Important:</span> You must change BoundFunction stub in the stubs that ship with the SDK to
+inherit from typing.Protocol. Methods in these stubs inherit from BoundFunction, and it needs to be a Protocol to work
+correctly in both regular code and in hooks.</span>.
 
 #### Basic usage
 
@@ -80,7 +84,9 @@ def save_game(obj: WillowPlayerController,
 
 #### Struct usage
 
-Might be more boilerplate than it's worth.
+Might be more boilerplate than it's worth but I'm leaving it in. Simple usage is just
+`location: Object.Vector = make_struct(*args, **kwargs)`, and hover over `Object.Vector` to see the dosctring with arg
+info.
 
 ```py
 from __future__ import annotations
@@ -98,8 +104,8 @@ else:
     make_struct_vector = make_struct_rotator = make_struct
 
 # These are now type hinted
-location = make_struct_vector('Core.Object.Vector', True, X=0, Y=0, Z=0)
-rotation = make_struct_rotator('Core.Object.Rotator', True, Pitch=0, Yaw=0, Roll=0)
+location = make_struct_vector('Vector', True, X=0, Y=0, Z=0)
+rotation = make_struct_rotator('Rotator', True, Pitch=0, Yaw=0, Roll=0)
 ```
 
 #### Enum usage
@@ -121,7 +127,7 @@ pc.NotifyInstinctSkillAction(e_isa.ISA_KilledEnemy)  # Possible enum values are 
 
 ## Usage - Legacy SDK
 
-Download the legacy_pystubs.zip file and extract it to desired location in your game folder. Recommend
+Download the legacy_gamestubs.zip file and extract it to desired location in your game folder. Recommend
 pystubs folder go in the Win32 folder and set it as a source root/directory in your IDE.
 
 #### Basic usage
@@ -179,7 +185,7 @@ location: Object.Vector = Vector(0, 0, 0)
     - `from Engine import Actor` -> Resolves to the Actor class
     - `from Engine.Actor import EMoveDir` -> Resolves to EMoveDir enum defined in Actor class
 - All inheritances are preserved.
-  `WillowPlayerController -> GearboxPlayerController -> GamePlayerController -> PlayerController -> Controller -> Actor -> Object`
+  `WillowPlayerController -> GearboxPlayerController -> GamePlayerController -> PlayerController -> Controller -> Actor -> Object -> UObject`
 - Unreal flags and types are converted to Python types
     - enum -> UnrealEnum
     - struct -> class
