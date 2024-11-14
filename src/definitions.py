@@ -6,7 +6,7 @@ from enum import Enum, auto
 from typing import List, Optional, TYPE_CHECKING
 from copy import copy
 
-from bl_py_stubs.game import Game
+from bl_py_stubs.src.game import Game
 
 if TYPE_CHECKING:
     from unrealsdk.unreal import UObject

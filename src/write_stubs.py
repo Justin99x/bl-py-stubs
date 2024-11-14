@@ -6,9 +6,9 @@ import time
 from copy import copy
 from typing import Dict, List
 
-from bl_py_stubs.definitions import BUILTINS, ClassDef
-from bl_py_stubs.game import Game
-from bl_py_stubs.paths import BL2_DIR, CLASS_DEF_DATA_DIR, COMMON_DIR, LEGACY_BL2_DIR, LEGACY_COMMON_DIR, LEGACY_TPS_DIR, PYSTUBS_DIR, \
+from bl_py_stubs.src.definitions import BUILTINS, ClassDef
+from bl_py_stubs.src.game import Game
+from bl_py_stubs.src.paths import BL2_DIR, CLASS_DEF_DATA_DIR, COMMON_DIR, LEGACY_BL2_DIR, LEGACY_COMMON_DIR, LEGACY_TPS_DIR, PYSTUBS_DIR, \
     TPS_DIR, get_pkg_dir, \
     get_pkg_init
 

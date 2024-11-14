@@ -2,11 +2,11 @@ import pickle
 from copy import copy
 from typing import cast
 
-from bl_py_stubs.definitions import ClassDef, EnumDef, FunctionDef, ParamRef, PropertyRef, ReturnRef, StructDef, \
+from bl_py_stubs.src.definitions import ClassDef, EnumDef, FunctionDef, ParamRef, PropertyRef, ReturnRef, StructDef, \
     TypeCat, \
     TypeRef
-from bl_py_stubs.game import Game, GAME
-from bl_py_stubs.paths import CLASS_DEF_DATA_DIR
+from bl_py_stubs.src.game import Game, GAME
+from bl_py_stubs.src.paths import CLASS_DEF_DATA_DIR
 from unrealsdk import find_all
 from unrealsdk.logging import info
 from unrealsdk.unreal import UClass, UEnum, UField, UFunction, UProperty, UStruct

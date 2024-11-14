@@ -1,9 +1,9 @@
 import pickle
 from typing import List, Optional
 
-from bl_py_stubs.definitions import ClassDef, EnumDef, StructDef
-from bl_py_stubs.game import Game
-from bl_py_stubs.paths import CLASS_DEF_DATA_DIR
+from bl_py_stubs.src.definitions import ClassDef, EnumDef, StructDef
+from bl_py_stubs.src.game import Game
+from bl_py_stubs.src.paths import CLASS_DEF_DATA_DIR
 
 
 def get_common_elements(bl2_list: List, tps_list: List) -> List:
