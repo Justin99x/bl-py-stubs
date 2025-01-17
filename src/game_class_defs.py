@@ -1,12 +1,15 @@
+import argparse
 import pickle
 from copy import copy
 from typing import cast
 
-from bl_py_stubs.src.definitions import ClassDef, EnumDef, FunctionDef, ParamRef, PropertyRef, ReturnRef, StructDef, \
+
+from mods_base import Game as mods_base_Game, command
+from src.definitions import ClassDef, EnumDef, FunctionDef, ParamRef, PropertyRef, ReturnRef, StructDef, \
     TypeCat, \
     TypeRef
-from bl_py_stubs.src.game import Game, GAME
-from bl_py_stubs.src.paths import CLASS_DEF_DATA_DIR
+from src.game import Game, GAME
+from src.paths import CLASS_DEF_DATA_DIR
 from unrealsdk import find_all
 from unrealsdk.logging import info
 from unrealsdk.unreal import UClass, UEnum, UField, UFunction, UProperty, UStruct
@@ -91,6 +94,8 @@ def get_property_ref(prop: UProperty) -> PropertyRef:
         info(prop.__class__)
         raise Exception()
 
+    if hasattr(prop, "ArrayDim") and prop.ArrayDim > 1:
+        type_ref.type_constructors += ['List']
 
     return PropertyRef(var_name=prop.Name, type_ref=type_ref)
 
@@ -184,9 +189,14 @@ def get_class_defs():
 
     return class_defs
 
-# cls = find_object('Class', 'Engine.AnimNode')
 
-class_defs = get_class_defs()
+@command
+def bps(args: argparse.Namespace) -> None:
+    """Utility to automatically reload modules in the correct order. Requires that they all implement register_module"""
+    class_defs = get_class_defs()
+    game_str = mods_base_Game.get_current().name
 
-with open(f'{CLASS_DEF_DATA_DIR}/class_defs.pkl', 'wb') as f:
-    pickle.dump(class_defs, f)
+    with open(f'{CLASS_DEF_DATA_DIR}/{game_str}_class_defs.pkl', 'wb') as f:
+        pickle.dump(class_defs, f)
+
+

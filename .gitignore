@@ -6,3 +6,6 @@ class_defs.json
 reload.py
 make_zips.py
 usage_sandbox.py
+/copy_to_games.sh
+/src/paths.py
+/data

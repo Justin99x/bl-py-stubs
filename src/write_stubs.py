@@ -2,13 +2,14 @@ import gc
 import os
 import pickle
 import shutil
+import textwrap
 import time
 from copy import copy
 from typing import Dict, List
 
-from bl_py_stubs.src.definitions import BUILTINS, ClassDef
-from bl_py_stubs.src.game import Game
-from bl_py_stubs.src.paths import BL2_DIR, CLASS_DEF_DATA_DIR, COMMON_DIR, LEGACY_BL2_DIR, LEGACY_COMMON_DIR, LEGACY_TPS_DIR, PYSTUBS_DIR, \
+from src.definitions import BUILTINS, ClassDef
+from src.game import Game
+from src.paths import BL2_DIR, CLASS_DEF_DATA_DIR, COMMON_DIR, PYSTUBS_DIR, \
     TPS_DIR, get_pkg_dir, \
     get_pkg_init
 
@@ -85,10 +86,30 @@ if __name__ == '__main__':
         bl2_class_defs: List[ClassDef] = pickle.load(f)
 
 
-    write_stubs(COMMON_DIR, common_class_defs)
-    write_stubs(TPS_DIR, tps_class_defs)
-    write_stubs(BL2_DIR, bl2_class_defs)
+    # write_stubs(COMMON_DIR, common_class_defs)
+    # write_stubs(TPS_DIR, tps_class_defs)
+    # write_stubs(BL2_DIR, bl2_class_defs)
 
-    write_stubs(LEGACY_COMMON_DIR, common_class_defs, legacy=True)
-    write_stubs(LEGACY_TPS_DIR, tps_class_defs, legacy=True)
-    write_stubs(LEGACY_BL2_DIR, bl2_class_defs, legacy=True)
+    # type_defs.pyi needed as reference for OutParam and AttributeProperty
+    with open(f'{PYSTUBS_DIR}/type_defs.pyi', 'w') as f:
+        f.write(textwrap.dedent(
+        '''\
+        from typing import Generic, TypeVar
+
+        # Create a generic Out type to indicate out parameters
+        T = TypeVar('T')
+
+
+        class OutParam(Generic[T]):
+            """
+            Indicates that a parameter is an 'out' parameter.
+            """
+
+
+        class AttributeProperty(Generic[T]):
+            """
+            Indicates that the property is an attribute property.
+            """
+        '''
+        ))
+

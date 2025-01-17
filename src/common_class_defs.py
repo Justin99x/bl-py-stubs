@@ -1,9 +1,9 @@
 import pickle
 from typing import List, Optional
 
-from bl_py_stubs.src.definitions import ClassDef, EnumDef, StructDef
-from bl_py_stubs.src.game import Game
-from bl_py_stubs.src.paths import CLASS_DEF_DATA_DIR
+from src.definitions import ClassDef, EnumDef, StructDef
+from src.game import Game
+from src.paths import CLASS_DEF_DATA_DIR
 
 
 def get_common_elements(bl2_list: List, tps_list: List) -> List:
@@ -70,10 +70,10 @@ def get_game_elements(common_list: List, game_list: List) -> List:
 
 
 if __name__ == '__main__':
-    with open(f'{CLASS_DEF_DATA_DIR}/tps_class_defs.pkl', 'rb') as f:
+    with open(f'{CLASS_DEF_DATA_DIR}/TPS_class_defs.pkl', 'rb') as f:
         tps_class_defs = pickle.load(f)
 
-    with open(f'{CLASS_DEF_DATA_DIR}/bl2_class_defs.pkl', 'rb') as f:
+    with open(f'{CLASS_DEF_DATA_DIR}/BL2_class_defs.pkl', 'rb') as f:
         bl2_class_defs: list[ClassDef] = pickle.load(f)
 
     bl2_base: dict[str, ClassDef] = {cls.full_name(): cls for cls in bl2_class_defs}
