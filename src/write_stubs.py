@@ -7,7 +7,7 @@ import time
 from copy import copy
 from typing import Dict, List
 
-from src.definitions import BUILTINS, ClassDef
+from src.definitions import  ClassDef
 from src.game import Game
 from src.paths import BL2_DIR, CLASS_DEF_DATA_DIR, COMMON_DIR, PYSTUBS_DIR, \
     TPS_DIR, get_pkg_dir, \
@@ -36,7 +36,7 @@ def class_list_to_all(class_list: List[str]) -> str:
     return '\n'.join(lines)
 
 def write_make_struct_stubs(base_dir: str, class_defs: List[ClassDef], game: Game) -> None:
-    lines = ['from typing import Final, Any, Optional, Type, Callable, List, Tuple, Annotated, TypeAlias, Protocol, overload, Literal\n']
+    lines = ['from typing import Final, Any, Optional, Type, Callable, List, Tuple, Annotated, TypeAlias, Protocol, overload, Literal, Sequence\n']
     lines.append(f'import common, bl2, tps\n\n')
 
     for class_def in class_defs:
@@ -86,9 +86,9 @@ if __name__ == '__main__':
         bl2_class_defs: List[ClassDef] = pickle.load(f)
 
 
-    # write_stubs(COMMON_DIR, common_class_defs)
-    # write_stubs(TPS_DIR, tps_class_defs)
-    # write_stubs(BL2_DIR, bl2_class_defs)
+    write_stubs(COMMON_DIR, common_class_defs)
+    write_stubs(TPS_DIR, tps_class_defs)
+    write_stubs(BL2_DIR, bl2_class_defs)
 
     # type_defs.pyi needed as reference for OutParam and AttributeProperty
     with open(f'{PYSTUBS_DIR}/type_defs.pyi', 'w') as f:

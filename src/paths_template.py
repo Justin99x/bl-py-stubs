@@ -1,3 +1,5 @@
+from .runner import register_module
+
 CLASS_DEF_DATA_DIR = '../../sdk_mods/bl_py_stubs/class_def_data'  # Either relative to in-game SDK location or absolute path
 PYSTUBS_DIR = '../../sdk_mods/bl_py_stubs/gamestubs'  # Relative to this project
 COMMON_DIR = f'{PYSTUBS_DIR}/common'
@@ -16,3 +18,5 @@ def get_pkg_dir(base_dir: str, pkg_name: str) -> str:
 
 def get_pkg_init(base_dir: str, pkg_name: str):
     return f'{get_pkg_dir(base_dir, pkg_name)}/__init__.pyi'
+
+register_module(__name__)

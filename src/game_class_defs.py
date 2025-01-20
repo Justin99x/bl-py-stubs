@@ -1,19 +1,12 @@
-import argparse
-import pickle
-from copy import copy
 from typing import cast
 
-
-from mods_base import Game as mods_base_Game, command
-from src.definitions import ClassDef, EnumDef, FunctionDef, ParamRef, PropertyRef, ReturnRef, StructDef, \
-    TypeCat, \
-    TypeRef
+from src.runner import register_module
+from src.definitions import ClassDef, EnumDef, FunctionDef, ParamRef, PropertyRef, ReturnRef, StructDef,  TypeCat, TypeRef
 from src.game import Game, GAME
-from src.paths import CLASS_DEF_DATA_DIR
-from unrealsdk import find_all
+
+from unrealsdk import find_all, find_object
 from unrealsdk.logging import info
 from unrealsdk.unreal import UClass, UEnum, UField, UFunction, UProperty, UStruct
-
 
 # Define the EPropertyFlags as constants
 CPF_Parm = 0x80  # Function parameter
@@ -94,8 +87,10 @@ def get_property_ref(prop: UProperty) -> PropertyRef:
         info(prop.__class__)
         raise Exception()
 
+
     if hasattr(prop, "ArrayDim") and prop.ArrayDim > 1:
-        type_ref.type_constructors += ['List']
+        type_ref.type_constructors += [f'Tuple_{prop.ArrayDim}']
+
 
     return PropertyRef(var_name=prop.Name, type_ref=type_ref)
 
@@ -185,18 +180,12 @@ def get_class_defs():
 
     class_defs = []
     for cls in classes:
+        # if cls.Name in ('WillowPawn', 'Object'):
         class_defs.append(get_class_def(cast(UClass, cls)))
 
     return class_defs
 
 
-@command
-def bps(args: argparse.Namespace) -> None:
-    """Utility to automatically reload modules in the correct order. Requires that they all implement register_module"""
-    class_defs = get_class_defs()
-    game_str = mods_base_Game.get_current().name
-
-    with open(f'{CLASS_DEF_DATA_DIR}/{game_str}_class_defs.pkl', 'wb') as f:
-        pickle.dump(class_defs, f)
 
 
+register_module(__name__)

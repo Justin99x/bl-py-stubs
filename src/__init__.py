@@ -1,6 +1,6 @@
-
 try:
-    from src.game_class_defs import bps
+    from .runner import bps
+
     bps.enable()
 except ImportError:
     pass

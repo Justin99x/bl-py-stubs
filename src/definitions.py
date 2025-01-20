@@ -5,15 +5,16 @@ from enum import Enum, auto
 from typing import List, Optional, TYPE_CHECKING
 from copy import copy
 
-from src.game import Game
+from .game import Game
+from .runner import register_module
 
 if TYPE_CHECKING:
     from unrealsdk.unreal import UObject
 
 DEFAULT_IMPORTS = [
-    'from typing import Type, List, Tuple, Annotated, Literal\n'
+    'from typing import Type, List, Tuple, Annotated, Literal, Sequence\n'
     'from type_defs import OutParam, AttributeProperty\n',
-    'from unrealsdk.unreal import BoundFunction, WrappedStruct, UObject\n'
+    'from unrealsdk.unreal import BoundFunction, WrappedStruct, UObject, UClass\n'
     'from unrealsdk.unreal._uenum import UnrealEnum\n',
     '\n'
 ]
@@ -124,6 +125,10 @@ class TypeRef(BaseDef):
         '''Tries for common prefix if available, reverts to game if not.
         No prefix if current class context is same as cls.'''
         use_game = override_game if override_game else self.game
+        if cls_name in self.names:
+            # Referencing a child of same class
+            return self.names[-1]
+
         ref = '.'.join([name for name in self.names])
         # Builtins don't get class/namespace prefix. CONST is str in Python
         if self.type_cat not in [TypeCat.BUILTIN, TypeCat.CONST]:
@@ -137,13 +142,25 @@ class PropertyRef:
     type_ref: TypeRef
 
     def _type_additions(self, ref: str, setter: bool):
+        if self.type_ref.names[0] == 'WillowEquipAbleItem':
+            x=1
         if 'Type' in self.type_ref.type_constructors:
             ref = f'Type[{ref}]'
-        if 'List' not in self.type_ref.type_constructors:
+        tuple_and_size = next((tcon for tcon in self.type_ref.type_constructors if 'Tuple' in tcon), None)
+        # Non arrays can all be None
+        if not 'List' in self.type_ref.type_constructors and not tuple_and_size:
             if self.type_ref.type_cat in [TypeCat.CLASS, TypeCat.FUNCTION] and setter:
                 ref = f'{ref} | None'
-        else:
-            ref = f'List[{ref}]'
+        elif tuple_and_size:
+            size = tuple_and_size.split("_")[-1]
+            if setter:
+                ref = f'Annotated[Sequence[{ref}], "size: {size}"]'
+            else:
+                ref = f'Tuple[{", ".join(ref for i in range(int(size)))}]'
+            if len(ref) > 120: # Arbitrary line length
+                ref = f'Annotated[{ref}, "size: {size}"]'
+        elif 'List' in self.type_ref.type_constructors:
+            ref = f'Sequence[{ref}]' if setter else f'List[{ref}]'
         if 'AttributeProperty' in self.type_ref.type_constructors:
             ref = f'Annotated[{ref}, AttributeProperty]'
         return ref
@@ -173,19 +190,38 @@ class ParamRef:
     var_name: str
     type_ref: TypeRef
 
-    def to_str(self, cls_name: str) -> str:
-        ref = self.type_ref.to_str(cls_name)
+    def type_str(self, cls_name: str) -> str:
+        """There's a few instances of out params that are fixed arrays, so we have special logic to handle the double annotation here.
+        This only returns the type, for params need to use to_str to include the var name"""
+        annotations = []
 
+        ref = self.type_ref.to_str(cls_name)
         if 'Type' in self.type_ref.type_constructors:
             ref = f'Type[{ref}]'
-        if 'List' not in self.type_ref.type_constructors:
+
+        tuple_and_size = next((tcon for tcon in self.type_ref.type_constructors if 'Tuple' in tcon), None)
+
+        if not 'List' in self.type_ref.type_constructors and not tuple_and_size:
             if self.type_ref.type_cat in [TypeCat.CLASS, TypeCat.FUNCTION]:
                 ref = f'{ref} | None'
-        else:
-            ref = f'List[{ref}]'
+        elif tuple_and_size:
+            size = tuple_and_size.split("_")[-1]
+            ref = f'Sequence[{ref}]'
+            annotations.append(f'"size: {size}"')
+        else:  # Params will accept any Sequence
+            ref = f'Sequence[{ref}]'
 
         if 'Out' in self.type_ref.type_constructors:
-            ref = f'Annotated[{ref}, OutParam]'
+            annotations.append(f"OutParam")
+            # ref = f'Annotated[{ref}, OutParam]'
+
+        if annotations:
+            ref = f"Annotated[{ref}, {', '.join(annotations)}]"
+        return ref
+
+    def to_str(self, cls_name: str) -> str:
+        """There's a few instances of out params that are fixed arrays, so we have special logic to handle the double annotation here."""
+        ref = self.type_str(cls_name)
 
         if 'Optional' in self.type_ref.type_constructors:
             return f'{self.var_name}: {ref} = ...'
@@ -197,22 +233,34 @@ class ParamRef:
 class ReturnRef:
     type_ref: TypeRef
 
-    def _out_param_to_str(self, cls_name: str, out_param: ParamRef):
-        ref = out_param.type_ref.to_str(cls_name, self.type_ref.game)
-        if 'Type' in out_param.type_ref.type_constructors:
-            ref = f'Type[{ref}]'
-        if 'List' in out_param.type_ref.type_constructors:
-            ref = f'List[{ref}]'
-
-        if 'Out' in out_param.type_ref.type_constructors:
-            ref = f'Annotated[{ref}, OutParam]'
-        else:
-            raise ValueError("Shouldn't call out_param_to_str on a non out param")
-
-        return ref
+    # def _out_param_to_str(self, cls_name: str, out_param: ParamRef):
+    #
+    #     ref = out_param.type_ref.to_str(cls_name, self.type_ref.game)
+    #     tuple_and_size = next((tcon for tcon in out_param.type_ref.type_constructors if 'Tuple' in tcon), None)
+    #     if 'Type' in out_param.type_ref.type_constructors:
+    #         ref = f'Type[{ref}]'
+    #     if not 'List' in out_param.type_ref.type_constructors and not tuple_and_size:
+    #         if self.type_ref.type_cat in [TypeCat.CLASS, TypeCat.FUNCTION]:
+    #             ref = f'{ref} | None'
+    #     elif tuple_and_size:
+    #         size = tuple_and_size.split("_")[-1]
+    #         ref = f'Sequence[{ref}]'
+    #         annotations.append(f'"size: {size}"')
+    #     else:  # Params will accept any Sequence
+    #         ref = f'Sequence[{ref}]'
+    #     if 'List' in out_param.type_ref.type_constructors:
+    #         ref = f'List[{ref}]'
+    #
+    #     if 'Out' in out_param.type_ref.type_constructors:
+    #         ref = f'Annotated[{ref}, OutParam]'
+    #     else:
+    #         raise ValueError("Shouldn't call out_param_to_str on a non out param")
+    #
+    #     return ref
 
     def to_str(self, cls_name: str, out_params: Optional[List[ParamRef]] = None, legacy: bool = False):
         '''No override needed here because we set it in set_game()'''
+
         ref = self.type_ref.to_str(cls_name)
         if 'Type' in self.type_ref.type_constructors:
             ref = f'Type[{ref}]'
@@ -222,7 +270,8 @@ class ReturnRef:
             ref = f'Annotated[{ref}, OutParam]'
 
         if out_params:
-            out_refs = ', '.join([self._out_param_to_str(cls_name, op) for op in out_params])
+            # Use type_str method from ParamRef to get the out param type without a var name.
+            out_refs = ', '.join([op.type_str(cls_name) for op in out_params])
             if legacy and ref == 'None':
                 return f'Tuple[{out_refs}]' if len(out_params) > 1 else out_refs
             else:
@@ -411,7 +460,7 @@ class ClassDef(BaseDef):
         # Class def and supers
         super_str = ', '.join([sup.to_str(self.name()) for sup in self.supers])
         if self.name() == 'Object':
-            super_str = 'UObject'
+            super_str = 'UClass'
         lines.append(f'class {self.name()}{f"({super_str})" if super_str else ""}:\n')
 
         # Enums
@@ -451,3 +500,5 @@ class ClassDef(BaseDef):
 
         # return lines
         return ''.join(lines)
+
+register_module(__name__)
