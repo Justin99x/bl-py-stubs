@@ -121,11 +121,11 @@ class TypeRef(BaseDef):
             return True
         return False
 
-    def to_str(self, cls_name: str, override_game: Optional[Game] = None) -> str:
+    def to_str(self, cls_name: str, override_game: Optional[Game] = None, super: bool=False) -> str:
         '''Tries for common prefix if available, reverts to game if not.
         No prefix if current class context is same as cls.'''
         use_game = override_game if override_game else self.game
-        if cls_name in self.names:
+        if cls_name in self.names and not super:
             # Referencing a child of same class
             return self.names[-1]
 
@@ -458,7 +458,7 @@ class ClassDef(BaseDef):
         lines.append('\n\n')
 
         # Class def and supers
-        super_str = ', '.join([sup.to_str(self.name()) for sup in self.supers])
+        super_str = ', '.join([sup.to_str(self.name(), super=True) for sup in self.supers])
         if self.name() == 'Object':
             super_str = 'UClass'
         lines.append(f'class {self.name()}{f"({super_str})" if super_str else ""}:\n')
