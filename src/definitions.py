@@ -125,9 +125,9 @@ class TypeRef(BaseDef):
         '''Tries for common prefix if available, reverts to game if not.
         No prefix if current class context is same as cls.'''
         use_game = override_game if override_game else self.game
-        if cls_name in self.names and not super:
-            # Referencing a child of same class
-            return self.names[-1]
+        # if cls_name in self.names and not super:
+        #     # Referencing a child of same class
+        #     return self.names[-1]
 
         ref = '.'.join([name for name in self.names])
         # Builtins don't get class/namespace prefix. CONST is str in Python
@@ -141,9 +141,7 @@ class PropertyRef:
     var_name: str
     type_ref: TypeRef
 
-    def _type_additions(self, ref: str, setter: bool):
-        if self.type_ref.names[0] == 'WillowEquipAbleItem':
-            x=1
+    def _type_additions(self, ref: str, setter: bool) -> str:
         if 'Type' in self.type_ref.type_constructors:
             ref = f'Type[{ref}]'
         tuple_and_size = next((tcon for tcon in self.type_ref.type_constructors if 'Tuple' in tcon), None)
@@ -182,7 +180,10 @@ class PropertyRef:
         return ''.join(lines)
 
     def make_struct_arg_str(self, cls_name: str, cls_game: Game):
-        return self._type_additions(self.type_ref.to_str(cls_name, None), True)
+        """Kind of hacky to put this here, but need a place to generate the args for make_struct helper. All args are optional"""
+        type_str = self._type_additions(self.type_ref.to_str(cls_name, None), True)
+        return f"{self.var_name}: {type_str} = ..."
+
 
 
 @dataclass
@@ -232,31 +233,6 @@ class ParamRef:
 @dataclass
 class ReturnRef:
     type_ref: TypeRef
-
-    # def _out_param_to_str(self, cls_name: str, out_param: ParamRef):
-    #
-    #     ref = out_param.type_ref.to_str(cls_name, self.type_ref.game)
-    #     tuple_and_size = next((tcon for tcon in out_param.type_ref.type_constructors if 'Tuple' in tcon), None)
-    #     if 'Type' in out_param.type_ref.type_constructors:
-    #         ref = f'Type[{ref}]'
-    #     if not 'List' in out_param.type_ref.type_constructors and not tuple_and_size:
-    #         if self.type_ref.type_cat in [TypeCat.CLASS, TypeCat.FUNCTION]:
-    #             ref = f'{ref} | None'
-    #     elif tuple_and_size:
-    #         size = tuple_and_size.split("_")[-1]
-    #         ref = f'Sequence[{ref}]'
-    #         annotations.append(f'"size: {size}"')
-    #     else:  # Params will accept any Sequence
-    #         ref = f'Sequence[{ref}]'
-    #     if 'List' in out_param.type_ref.type_constructors:
-    #         ref = f'List[{ref}]'
-    #
-    #     if 'Out' in out_param.type_ref.type_constructors:
-    #         ref = f'Annotated[{ref}, OutParam]'
-    #     else:
-    #         raise ValueError("Shouldn't call out_param_to_str on a non out param")
-    #
-    #     return ref
 
     def to_str(self, cls_name: str, out_params: Optional[List[ParamRef]] = None, legacy: bool = False):
         '''No override needed here because we set it in set_game()'''
@@ -312,7 +288,7 @@ class StructDef(BaseDef):
     def to_str(self, cls_name: str, cls_game: Game, legacy: bool = False) -> str:
         lines = []
         super_str = '(WrappedStruct)' if not legacy else ''
-        prop_arg_refs = [f'{prop.var_name}: {prop.make_struct_arg_str(cls_name, cls_game)}' for prop in self.properties]
+        prop_arg_refs = [prop.make_struct_arg_str(cls_name, cls_game) for prop in self.properties]
         lines.append(f'\tclass {self.name()}{super_str}:\n')
         # Docstring
         lines.append(f'\t\t"""\n\t\t{self.full_name()}\n\n')
@@ -326,7 +302,7 @@ class StructDef(BaseDef):
             struct_name = self.full_name() if self.name() in DUPLICATE_STRUCTS else self.name()
             lines.append('\n\t\t@staticmethod\n')
             lines.append(
-                f'\t\tdef make_struct(name: Literal["{struct_name}"], fully_qualified: Literal[True], /{", *, " if prop_arg_refs else ""}{", ".join(prop_arg_refs)}) -> {cls_game.value + "." + ".".join(self.names)}: ...')
+                f'\t\tdef make_struct(name: Literal["{struct_name}"], fully_qualified: Literal[False], /{", *, " if prop_arg_refs else ""}{", ".join(prop_arg_refs)}) -> {cls_game.value + "." + ".".join(self.names)}: ...')
         elif len(self.properties) == 0:
             lines.append('\t\tpass')
 
