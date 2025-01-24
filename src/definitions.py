@@ -12,17 +12,18 @@ if TYPE_CHECKING:
     from unrealsdk.unreal import UObject
 
 DEFAULT_IMPORTS = [
-    'from typing import Type, List, Tuple, Annotated, Literal, Sequence\n'
+    'from types import EllipsisType\n',
+    'from typing import Type, List, Tuple, Annotated, Literal, Sequence\n',
     'from type_defs import OutParam, AttributeProperty\n',
-    'from unrealsdk.unreal import BoundFunction, WrappedStruct, UObject, UClass\n'
+    'from unrealsdk.unreal import BoundFunction, WrappedStruct, UObject, UClass\n',
     'from unrealsdk.unreal._uenum import UnrealEnum\n',
-    '\n'
+    '\n',
 ]
 
 LEGACY_DEFAULT_IMPORTS = [
-    'from typing import Type, List, Tuple, Annotated, Protocol, Literal\n'
+    'from typing import Type, List, Tuple, Annotated, Protocol, Literal\n',
     'from type_defs import OutParam, AttributeProperty\n',
-    '\n'
+    '\n',
 ]
 
 BUILTINS = [
@@ -251,7 +252,7 @@ class ReturnRef:
             if legacy and ref == 'None':
                 return f'Tuple[{out_refs}]' if len(out_params) > 1 else out_refs
             else:
-                ref = 'Ellipsis' if ref == 'None' else ref
+                ref = 'EllipsisType' if ref == 'None' else ref
                 return f'Tuple[{ref}, {out_refs}]'
         else:
             return ref

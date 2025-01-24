@@ -9,3 +9,4 @@ usage_sandbox.py
 /copy_to_games.sh
 /src/paths.py
 /data
+zip_gamestubs.sh
