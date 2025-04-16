@@ -144,7 +144,7 @@ class PropertyRef:
             ref = f'type[{ref}]'
         tuple_and_size = next((tcon for tcon in self.type_ref.type_constructors if 'tuple' in tcon), None)
         # Non arrays can all be None
-        if not 'list' in self.type_ref.type_constructors and not tuple_and_size:
+        if 'list' not in self.type_ref.type_constructors and not tuple_and_size:
             if self.type_ref.type_cat in [TypeCat.CLASS, TypeCat.FUNCTION] and setter:
                 ref = f'{ref} | None'
         elif tuple_and_size:
@@ -200,7 +200,7 @@ class ParamRef:
 
         tuple_and_size = next((tcon for tcon in self.type_ref.type_constructors if 'tuple' in tcon), None)
 
-        if not 'list' in self.type_ref.type_constructors and not tuple_and_size:
+        if 'list' not in self.type_ref.type_constructors and not tuple_and_size:
             if self.type_ref.type_cat in [TypeCat.CLASS, TypeCat.FUNCTION]:
                 ref = f'{ref} | None'
         elif tuple_and_size:
@@ -211,8 +211,7 @@ class ParamRef:
             ref = f'Sequence[{ref}]'
 
         if 'Out' in self.type_ref.type_constructors:
-            annotations.append(f"OutParam")
-            # ref = f'Annotated[{ref}, OutParam]'
+            annotations.append("OutParam")
 
         if annotations:
             ref = f"Annotated[{ref}, {', '.join(annotations)}]"
@@ -269,7 +268,7 @@ class EnumDef(BaseDef):
         for attr, val in self.attributes.items():
             lines.append(f'\t\t{attr} = {val}\n')
         if not self.attributes:
-            lines.append(f'\t\tpass\n')
+            lines.append('\t\tpass\n')
         lines.append('\n\n')
         return ''.join(lines)
 
@@ -482,7 +481,7 @@ class ClassDef(BaseDef):
         lines.extend(deferred_properties_functions)
 
         if len(self.properties) + len(self.functions) + len(self.structs) + len(self.enums) == 0:
-            lines.append(f'\tpass\n')
+            lines.append('\tpass\n')
 
         # return lines
         return ''.join(lines)

@@ -1,13 +1,9 @@
-import gc
 import os
 import pickle
 import shutil
 import textwrap
-import time
-from copy import copy
 
 from src.definitions import  ClassDef
-from src.game import Game
 from src.paths import BL2_DIR, CLASS_DEF_DATA_DIR, COMMON_DIR, PYSTUBS_DIR, \
     TPS_DIR, get_pkg_dir, \
     get_pkg_init
@@ -28,7 +24,7 @@ def write_class_stub(base_dir: str, class_def: ClassDef) -> None:
 
 
 def class_list_to_all(class_list: list[str]) -> str:
-    lines = [f"__all__ = ["]
+    lines = ["__all__ = ["]
     for i, item in enumerate(class_list):
         lines.append(f"    '{item}',")
     lines.append("]")

@@ -4,7 +4,7 @@ from src.runner import register_module
 from src.definitions import ClassDef, EnumDef, FunctionDef, ParamRef, PropertyRef, ReturnRef, StructDef,  TypeCat, TypeRef
 from src.game import Game, GAME
 
-from unrealsdk import find_all, find_object
+from unrealsdk import find_all
 from unrealsdk.logging import info
 from unrealsdk.unreal import UClass, UEnum, UField, UFunction, UProperty, UStruct
 
