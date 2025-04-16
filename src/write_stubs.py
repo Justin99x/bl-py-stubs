@@ -5,7 +5,6 @@ import shutil
 import textwrap
 import time
 from copy import copy
-from typing import Dict, List
 
 from src.definitions import  ClassDef
 from src.game import Game
@@ -14,10 +13,10 @@ from src.paths import BL2_DIR, CLASS_DEF_DATA_DIR, COMMON_DIR, PYSTUBS_DIR, \
     get_pkg_init
 
 
-def write_class_stub(base_dir: str, class_def: ClassDef, legacy: bool = False) -> None:
+def write_class_stub(base_dir: str, class_def: ClassDef) -> None:
     '''Function to write the stub file. Fields need to all be d
     efined as properties so that game specific versions can subclass them.'''
-    lines = class_def.to_str(legacy=legacy)
+    lines = class_def.to_str()
 
     # Write the file
     with open(f'{get_pkg_dir(base_dir, class_def.package)}/{class_def.name()}.pyi', 'w') as f:
@@ -28,27 +27,15 @@ def write_class_stub(base_dir: str, class_def: ClassDef, legacy: bool = False) -
         f.write(f'from .{class_def.name()} import {class_def.name()}\n')
 
 
-def class_list_to_all(class_list: List[str]) -> str:
+def class_list_to_all(class_list: list[str]) -> str:
     lines = [f"__all__ = ["]
     for i, item in enumerate(class_list):
         lines.append(f"    '{item}',")
     lines.append("]")
     return '\n'.join(lines)
 
-def write_make_struct_stubs(base_dir: str, class_defs: List[ClassDef], game: Game) -> None:
-    lines = ['from typing import Final, Any, Optional, Type, Callable, List, Tuple, Annotated, TypeAlias, Protocol, overload, Literal, Sequence\n']
-    lines.append(f'import common, bl2, tps\n\n')
 
-    for class_def in class_defs:
-        for struct_def in class_def.structs:
-            lines.append(struct_def.overload_str(class_def.name(), game))
-
-    with open(f'{base_dir}/{game.value}_structs.pyi', 'w') as f:
-        f.write(''.join(lines))
-
-
-
-def write_stubs(base_dir: str, class_defs: List[ClassDef], legacy: bool = False) -> None:
+def write_stubs(base_dir: str, class_defs: list[ClassDef]) -> None:
     packages = set([class_def.package for class_def in class_defs])
 
     # Clear out old stubs and add __init__.py files
@@ -63,7 +50,7 @@ def write_stubs(base_dir: str, class_defs: List[ClassDef], legacy: bool = False)
 
     package_classes = {pkg: [] for pkg in packages}
     for class_def in class_defs:
-        write_class_stub(base_dir, class_def, legacy=legacy)
+        write_class_stub(base_dir, class_def)
         package_classes[class_def.package].append(class_def.name())
 
     for pkg in packages:
@@ -77,13 +64,13 @@ def write_stubs(base_dir: str, class_defs: List[ClassDef], legacy: bool = False)
 if __name__ == '__main__':
 
     with open(f'{CLASS_DEF_DATA_DIR}/common_class_defs_adj.pkl', 'rb') as f:
-        common_class_defs: List[ClassDef] = pickle.load(f)
+        common_class_defs: list[ClassDef] = pickle.load(f)
 
     with open(f'{CLASS_DEF_DATA_DIR}/tps_class_defs_adj.pkl', 'rb') as f:
-        tps_class_defs: List[ClassDef] = pickle.load(f)
+        tps_class_defs: list[ClassDef] = pickle.load(f)
 
     with open(f'{CLASS_DEF_DATA_DIR}/bl2_class_defs_adj.pkl', 'rb') as f:
-        bl2_class_defs: List[ClassDef] = pickle.load(f)
+        bl2_class_defs: list[ClassDef] = pickle.load(f)
 
 
     write_stubs(COMMON_DIR, common_class_defs)
@@ -112,4 +99,3 @@ if __name__ == '__main__':
             """
         '''
         ))
-

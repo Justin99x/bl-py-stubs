@@ -1,12 +1,11 @@
 import pickle
-from typing import List, Optional
 
 from src.definitions import ClassDef, EnumDef, StructDef
 from src.game import Game
 from src.paths import CLASS_DEF_DATA_DIR
 
 
-def get_common_elements(bl2_list: List, tps_list: List) -> List:
+def get_common_elements(bl2_list: list, tps_list: list) -> list:
     ret_list = []
     for element in bl2_list + tps_list:
         if element in bl2_list and element in tps_list and element not in ret_list:
@@ -32,7 +31,7 @@ def create_common_enum_def(tps_enum: EnumDef, bl2_enum: EnumDef) -> EnumDef:
     return common_enum_def
 
 
-def create_common_class_def(tps_cls: ClassDef, bl2_cls: ClassDef) -> Optional[ClassDef]:
+def create_common_class_def(tps_cls: ClassDef, bl2_cls: ClassDef) -> ClassDef | None:
     assert tps_cls.names == bl2_cls.names and tps_cls.package == bl2_cls.package and tps_cls.type_cat == bl2_cls.type_cat
     common_class_def = ClassDef(bl2_cls.names, bl2_cls.package, bl2_cls.type_cat, bl2_cls.supers, game=Game.COMMON)
 
@@ -65,7 +64,7 @@ def create_common_class_def(tps_cls: ClassDef, bl2_cls: ClassDef) -> Optional[Cl
     return common_class_def
 
 
-def get_game_elements(common_list: List, game_list: List) -> List:
+def get_game_elements(common_list: list, game_list: list) -> list:
     return [element for element in game_list if element not in common_list]
 
 

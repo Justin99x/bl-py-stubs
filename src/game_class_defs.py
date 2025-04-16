@@ -60,7 +60,7 @@ IGNORE_PROPERTIES = (
 def get_property_ref(prop: UProperty) -> PropertyRef:
     if prop.Class.Name == 'ArrayProperty':
         type_ref = get_property_ref(prop.Inner).type_ref
-        type_ref.type_constructors += ['List']
+        type_ref.type_constructors += ['list']
     elif prop.Class.Name == 'StructProperty':
         type_ref = TypeRef.from_uobject(prop.Struct)
     elif prop.Class.Name in ['ObjectProperty', 'ComponentProperty']:
@@ -71,15 +71,15 @@ def get_property_ref(prop: UProperty) -> PropertyRef:
         type_ref = TypeRef.from_uobject(prop.InterfaceClass)
     elif prop.Class.Name == 'ClassProperty':
         type_ref = TypeRef.from_uobject(prop.MetaClass)
-        type_ref.type_constructors = ['Type']
+        type_ref.type_constructors = ['type']
     elif prop.Class.Name == 'DelegateProperty':
         type_ref = TypeRef.from_uobject(prop.Signature)
     elif prop.Class.Name == 'Const':
         type_ref = TypeRef(names=['str'], package='BUILTIN', type_cat=TypeCat.CONST, game=Game.COMMON)
     elif prop.Class.Name in BASIC_TYPES.keys():
-        type_ref = TypeRef(names=[BASIC_TYPES.get(prop.Class.Name)], package='BUILTIN', type_cat=TypeCat.BUILTIN, game=Game.COMMON)
+        type_ref = TypeRef(names=[BASIC_TYPES[prop.Class.Name]], package='BUILTIN', type_cat=TypeCat.BUILTIN, game=Game.COMMON)
     elif prop.Class.Name in ATTRIBUTE_TYPES.keys():
-        type_ref = TypeRef(names=[ATTRIBUTE_TYPES.get(prop.Class.Name)], package='BUILTIN', type_cat=TypeCat.BUILTIN, game=Game.COMMON)
+        type_ref = TypeRef(names=[ATTRIBUTE_TYPES[prop.Class.Name]], package='BUILTIN', type_cat=TypeCat.BUILTIN, game=Game.COMMON)
         type_ref.type_constructors = ['AttributeProperty']
     else:
         info(prop.Name)
@@ -89,7 +89,7 @@ def get_property_ref(prop: UProperty) -> PropertyRef:
 
 
     if hasattr(prop, "ArrayDim") and prop.ArrayDim > 1:
-        type_ref.type_constructors += [f'Tuple_{prop.ArrayDim}']
+        type_ref.type_constructors += [f'tuple_{prop.ArrayDim}']
 
 
     return PropertyRef(var_name=prop.Name, type_ref=type_ref)
@@ -141,7 +141,7 @@ def get_struct_def(struct: UStruct) -> StructDef:
     if struct.SuperField:
         struct_type.supers = [TypeRef.from_uobject(struct.SuperField)]
 
-    prop: UField = struct.Children  # Linked list
+    prop: UField | None = struct.Children  # Linked list
     while prop:
         struct_type.properties.append(get_property_ref(cast(UProperty, prop)))
         prop = prop.Next
@@ -157,7 +157,7 @@ def get_class_def(cls: UClass) -> ClassDef:
         cls_super.game = GAME
         class_def.supers = [cls_super]
 
-    prop: UField = cls.Children  # Linked list
+    prop: UField | None = cls.Children  # Linked list
     while prop:
         if prop.Class.Name == 'ScriptStruct':
             class_def.structs.append(get_struct_def(cast(UStruct, prop)))
