@@ -70,7 +70,7 @@ def get_game_elements(common_list: list, game_list: list) -> list:
 
 if __name__ == '__main__':
     with open(f'{CLASS_DEF_DATA_DIR}/TPS_class_defs.pkl', 'rb') as f:
-        tps_class_defs = pickle.load(f)
+        tps_class_defs: list[ClassDef] = pickle.load(f)
 
     with open(f'{CLASS_DEF_DATA_DIR}/BL2_class_defs.pkl', 'rb') as f:
         bl2_class_defs: list[ClassDef] = pickle.load(f)

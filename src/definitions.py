@@ -67,9 +67,11 @@ class BaseDef:
         return self.names[0]
 
     def name(self) -> str:
+        """Name of the object without any outers."""
         return self.names[-1]
 
     def full_name(self) -> str:
+        """Full name starting with package."""
         return f"{self.package}.{'.'.join(self.names)}"
 
 
@@ -142,11 +144,18 @@ class PropertyRef:
     def _type_additions(self, ref: str, setter: bool) -> str:
         if 'type' in self.type_ref.type_constructors:
             ref = f'type[{ref}]'
+        
+        # Enums can also accept ints. Users need to figure out which ints are valid.
+        if self.type_ref.type_cat == TypeCat.ENUM:
+            ref = f"{ref} | int"
+        
         tuple_and_size = next((tcon for tcon in self.type_ref.type_constructors if 'tuple' in tcon), None)
+
         # Non arrays can all be None
         if 'list' not in self.type_ref.type_constructors and not tuple_and_size:
             if self.type_ref.type_cat in [TypeCat.CLASS, TypeCat.FUNCTION] and setter:
                 ref = f'{ref} | None'
+
         elif tuple_and_size:
             size = tuple_and_size.split("_")[-1]
             if setter:
@@ -162,8 +171,8 @@ class PropertyRef:
         return ref
 
     def to_str(self, cls_name: str, tabs: int, cls_game: Game | None = None) -> str:
-        '''cls_game is current class context, used to determine what game return values and getters should use
-        Only needed here because same type_ref is used for both getters and setters'''
+        # cls_game is current class context, used to determine what game return values and getters should use
+        # Only needed here because same type_ref is used for both getters and setters'''
         getter_ref = self._type_additions(self.type_ref.to_str(cls_name, cls_game), False)
         setter_ref = self._type_additions(self.type_ref.to_str(cls_name), True)
 
@@ -198,6 +207,11 @@ class ParamRef:
         if 'type' in self.type_ref.type_constructors:
             ref = f'type[{ref}]'
 
+        # Enums can also accept ints. Users need to figure out which ints are valid.
+        if self.type_ref.type_cat == TypeCat.ENUM:
+            ref = f"{ref} | int"
+
+        # Fixed length array handling
         tuple_and_size = next((tcon for tcon in self.type_ref.type_constructors if 'tuple' in tcon), None)
 
         if 'list' not in self.type_ref.type_constructors and not tuple_and_size:
@@ -223,8 +237,7 @@ class ParamRef:
 
         if 'Optional' in self.type_ref.type_constructors:
             return f'{self.var_name}: {ref} = ...'
-        else:
-            return f'{self.var_name}: {ref}'
+        return f'{self.var_name}: {ref}'
 
 
 @dataclass
@@ -252,11 +265,15 @@ class ReturnRef:
 
 @dataclass
 class EnumDef(BaseDef):
+    supers: list[TypeRef] = field(default_factory=list)
     attributes: dict = field(default_factory=dict)
 
-    def to_str(self) -> str:
+    def to_str(self, cls_game: Game) -> str:
         lines = []
-        super_str = '(UnrealEnum)'
+        if self.supers:
+            super_str = "(" + ", ".join([sup.to_str(self.name(), super=True) for sup in self.supers]) + ")"
+        else:
+            super_str = '(UnrealEnum)'
         lines.append(f'\tclass {self.name()}{super_str}:\n')
         # Docstring
         lines.append('\t\t"""\n')
@@ -266,12 +283,17 @@ class EnumDef(BaseDef):
 
         # Attributes
         for attr, val in self.attributes.items():
-            lines.append(f'\t\t{attr} = {val}\n')
+            lines.append(f'\t\t{attr} = {val}')
         if not self.attributes:
-            lines.append('\t\tpass\n')
+            lines.append('\t\tpass')
         lines.append('\n\n')
-        return ''.join(lines)
+        
+        # find_enum helper
+        lines.append("\t\t@staticmethod\n")
+        lines.append(f'\t\tdef find_enum(name: Literal["{self.name()}"]) -> {cls_game.value + "." + ".".join(self.names)}: ...')
+        lines.append("\n\n")
 
+        return "".join(lines)
 
 @dataclass
 class StructDef(BaseDef):
@@ -280,7 +302,10 @@ class StructDef(BaseDef):
 
     def to_str(self, cls_name: str, cls_game: Game) -> str:
         lines = []
-        super_str = '(WrappedStruct)'
+        if self.supers:
+            super_str = "(" + ', '.join([sup.to_str(self.name(), super=True) for sup in self.supers]) + ")"
+        else:
+            super_str = '(WrappedStruct)'
         prop_arg_refs = [prop.make_struct_arg_str(cls_name, cls_game) for prop in self.properties]
         lines.append(f'\tclass {self.name()}{super_str}:\n')
         # Docstring
@@ -288,13 +313,15 @@ class StructDef(BaseDef):
         lines.extend([f'\t\t{prop_arg_ref}\n' for prop_arg_ref in prop_arg_refs])
         lines.append('\t\t"""\n')
 
+        # Properties
         for prop in self.properties:
             lines.append(prop.to_str(cls_name, 2, cls_game))  # Two tabs because we're in a class in a struct
 
+        # make_struct helper
         struct_name = self.full_name() if self.name() in DUPLICATE_STRUCTS else self.name()
         lines.append('\n\t\t@staticmethod\n')
         lines.append(
-            f'\t\tdef make_struct(name: Literal["{struct_name}"], fully_qualified: Literal[False], /{", *, " if prop_arg_refs else ""}{", ".join(prop_arg_refs)}) -> {cls_game.value + "." + ".".join(self.names)}: ...')
+            f'\t\tdef make_struct(name: Literal["{struct_name}"], /{", *, " if prop_arg_refs else ""}{", ".join(prop_arg_refs)}) -> {cls_game.value + "." + ".".join(self.names)}: ...')
 
         lines.append('\n\n')
         return ''.join(lines)
@@ -395,6 +422,11 @@ class ClassDef(BaseDef):
         if try_game != Game.COMMON and self.name() not in [sup.name() for sup in self.supers] and self.full_name() in common_full_names:
             self.supers = [TypeRef(self.names, self.package, self.type_cat, Game.COMMON)] + self.supers
 
+        # Enums
+        for enum in self.enums:
+            if try_game != Game.COMMON and enum.full_name() in common_full_names:
+                enum.supers = [TypeRef(enum.names, enum.package, enum.type_cat, Game.COMMON)]
+            
         # Structs
         for struct in self.structs:
             for sup in struct.supers:
@@ -444,13 +476,13 @@ class ClassDef(BaseDef):
 
         # Class def and supers
         super_str = ', '.join([sup.to_str(self.name(), super=True) for sup in self.supers])
-        if self.name() == 'Object':
+        if self.name() == 'Object' and self.game == Game.COMMON:
             super_str = 'UClass'
         lines.append(f'class {self.name()}{f"({super_str})" if super_str else ""}:\n')
 
         # Enums
         for enum in self.enums:
-            lines.append(enum.to_str())
+            lines.append(enum.to_str(self.game))
 
         # Structs
         deferred_struct_lines = []

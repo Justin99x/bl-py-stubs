@@ -71,7 +71,7 @@ def get_property_ref(prop: UProperty) -> PropertyRef:
         type_ref = TypeRef.from_uobject(prop.InterfaceClass)
     elif prop.Class.Name == 'ClassProperty':
         type_ref = TypeRef.from_uobject(prop.MetaClass)
-        type_ref.type_constructors = ['type']
+        # type_ref.type_constructors = ['type']
     elif prop.Class.Name == 'DelegateProperty':
         type_ref = TypeRef.from_uobject(prop.Signature)
     elif prop.Class.Name == 'Const':
