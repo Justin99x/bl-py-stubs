@@ -269,6 +269,9 @@ class EnumDef(BaseDef):
     attributes: dict = field(default_factory=dict)
 
     def to_str(self, cls_game: Game) -> str:
+        # if self.full_name() == "Core.Object.EDebugBreakType":
+        #     print(self.supers)
+
         lines = []
         if self.supers:
             super_str = "(" + ", ".join([sup.to_str(self.name(), super=True) for sup in self.supers]) + ")"
@@ -283,10 +286,10 @@ class EnumDef(BaseDef):
 
         # Attributes
         for attr, val in self.attributes.items():
-            lines.append(f'\t\t{attr} = {val}')
+            lines.append(f'\t\t{attr}: int\n')
         if not self.attributes:
-            lines.append('\t\tpass')
-        lines.append('\n\n')
+            lines.append('\t\tpass\n')
+        lines.append('\n')
         
         # find_enum helper
         lines.append("\t\t@staticmethod\n")

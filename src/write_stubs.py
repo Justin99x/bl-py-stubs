@@ -3,8 +3,8 @@ import pickle
 import shutil
 import textwrap
 
-from src.definitions import  ClassDef
-from src.paths import BL2_DIR, CLASS_DEF_DATA_DIR, COMMON_DIR, PYSTUBS_DIR, \
+from .definitions import  ClassDef
+from .paths import BL2_DIR, CLASS_DEF_DATA_DIR, COMMON_DIR, PYSTUBS_DIR, \
     TPS_DIR, get_pkg_dir, \
     get_pkg_init
 

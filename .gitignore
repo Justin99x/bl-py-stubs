@@ -7,12 +7,10 @@ reload.py
 make_zips.py
 usage_sandbox.py
 copy_src_to_games.sh
-copy_stubs_to_games.sh
 /src/paths.py
 /data
 zip_gamestubs.sh
 .env
-memory-bank/
 .vscode/
-.clineignore
-.clinerules
+Makefile
+install_stubs.sh

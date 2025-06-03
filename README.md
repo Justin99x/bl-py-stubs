@@ -118,65 +118,14 @@ from unrealsdk import find_enum
 
 if TYPE_CHECKING:
     from bl2 import WillowPlayerController
+    find_enum_eisa = WillowPlayerController.EInstinctSkillActions
+else:
+    find_enum_eisa = find_enum
 
-e_isa: WillowPlayerController.EInstinctSkillActions = find_enum('EInstinctSkillActions')
+e_isa = find_enum_eisa('EInstinctSkillActions')
 
 pc = cast("WillowPlayerController", get_pc())
 pc.NotifyInstinctSkillAction(e_isa.ISA_KilledEnemy)  # Possible enum values are type hinted.
-```
-
-## Usage - Legacy SDK
-
-Download the legacy_gamestubs.zip file and extract it to desired location in your game folder. Recommend
-pystubs folder go in the Win32 folder and set it as a source root/directory in your IDE.
-
-#### Basic usage
-
-```py
-from __future__ import annotations  # Ensures type hints are ignored at runtime
-from typing import TYPE_CHECKING
-import unrealsdk
-
-if TYPE_CHECKING:  # Only attempt import when type checking
-    from common import WillowPlayerController  # from bl2 or from tps if making a mod for a specific game
-
-
-# Example usage for WillowPlayerController    
-def get_wpc() -> WillowPlayerController:
-    return unrealsdk.GetEngine().GamePlayers[0].Actor
-
-
-PC = get_wpc()  # Auto-complete now available for PC
-```
-
-#### Hook usage
-
-```py
-from __future__ import annotations  # Ensures type hints are ignored at runtime
-from typing import TYPE_CHECKING
-from unrealsdk import UFunction
-
-if TYPE_CHECKING:
-    from bl2 import WillowPlayerController
-
-
-@Hook("WillowGame.WillowPlayerController.SaveGame")
-def save_game(caller: WillowPlayerController, function: UFunction, params: WillowPlayerController.SaveGame.args):
-    # Type hinting available for caller and params
-    return True
-```
-
-#### Struct usage (using Structs library)
-
-```py
-from __future__ import annotations  # Ensures type hints are ignored at runtime
-from typing import TYPE_CHECKING
-from Mods.Structs import Vector
-
-if TYPE_CHECKING:
-    from tps import Object
-
-location: Object.Vector = Vector(0, 0, 0)
 ```
 
 ## Additional Information

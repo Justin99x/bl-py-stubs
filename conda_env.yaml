@@ -1,0 +1,5 @@
+name: bl-py-stubs
+channels:
+  - defaults
+dependencies:
+  - python=3.13

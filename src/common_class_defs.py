@@ -1,8 +1,8 @@
 import pickle
 
-from src.definitions import ClassDef, EnumDef, StructDef
-from src.game import Game
-from src.paths import CLASS_DEF_DATA_DIR
+from .definitions import ClassDef, EnumDef, StructDef
+from .game import Game
+from .paths import CLASS_DEF_DATA_DIR
 
 
 def get_common_elements(bl2_list: list, tps_list: list) -> list:

@@ -1,8 +1,8 @@
 from typing import cast
 
-from src.runner import register_module
-from src.definitions import ClassDef, EnumDef, FunctionDef, ParamRef, PropertyRef, ReturnRef, StructDef,  TypeCat, TypeRef
-from src.game import Game, GAME
+from .runner import register_module
+from .definitions import ClassDef, EnumDef, FunctionDef, ParamRef, PropertyRef, ReturnRef, StructDef,  TypeCat, TypeRef
+from .game import Game, GAME
 
 from unrealsdk import find_all
 from unrealsdk.logging import info
@@ -71,7 +71,6 @@ def get_property_ref(prop: UProperty) -> PropertyRef:
         type_ref = TypeRef.from_uobject(prop.InterfaceClass)
     elif prop.Class.Name == 'ClassProperty':
         type_ref = TypeRef.from_uobject(prop.MetaClass)
-        # type_ref.type_constructors = ['type']
     elif prop.Class.Name == 'DelegateProperty':
         type_ref = TypeRef.from_uobject(prop.Signature)
     elif prop.Class.Name == 'Const':

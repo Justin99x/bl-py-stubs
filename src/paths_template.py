@@ -1,7 +1,7 @@
 from .runner import register_module
 
 CLASS_DEF_DATA_DIR = '../../sdk_mods/bl_py_stubs/class_def_data'  # Either relative to in-game SDK location or absolute path
-PYSTUBS_DIR = '../../sdk_mods/bl_py_stubs/gamestubs'  # Relative to this project
+PYSTUBS_DIR = 'data/gamestubs'  # Relative to this project
 COMMON_DIR = f'{PYSTUBS_DIR}/common'
 BL2_DIR = f'{PYSTUBS_DIR}/bl2'
 TPS_DIR = f'{PYSTUBS_DIR}/tps'
